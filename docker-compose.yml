@@ -1,0 +1,47 @@
+name: wireguard-vpn
+
+services:
+  wireguard:
+    image: lscr.io/linuxserver/wireguard:latest
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    volumes:
+      - "./wireguard-configurations:/config/wg_confs"
+      # - "/lib/modules:/lib/modules:ro" # for kernel modules
+    ports:
+      # anything that wants to use the wireguard network must expose ports here
+
+      # qBittorrent
+      # - "${QBITTORRENT_WEBUI_PORT}:${QBITTORRENT_WEBUI_PORT}"
+      # - "${QBITTORRENT_TORRENTING_PORT}:${QBITTORRENT_TORRENTING_PORT}"
+      # - "${QBITTORRENT_TORRENTING_PORT}:${QBITTORRENT_TORRENTING_PORT}/udp"
+
+      # Dante
+      - "127.0.0.1:1080:1080"
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: America/Chicago
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wg show airvpn | grep -q 'latest handshake'"]
+
+  dante:
+    image: vimagick/dante
+    container_name: dante
+    network_mode: service:wireguard
+    volumes:
+      - "./dante-configuration/sockd.conf:/etc/dante/sockd.conf:ro"
+    tmpfs:
+      - /run
+    restart: unless-stopped
+    depends_on:
+      wireguard:
+        condition: service_healthy
+
+  # TODO: Add linuxserver.io/qbittorrent container
+
