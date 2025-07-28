@@ -1,1 +1,1 @@
-wireguard-configurations/*.conf
+config/wg0.conf
